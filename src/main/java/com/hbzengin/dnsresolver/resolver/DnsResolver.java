@@ -5,6 +5,7 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import com.hbzengin.dnsresolver.model.DnsHeader;
 import com.hbzengin.dnsresolver.model.DnsMessage;
 
 public class DnsResolver {
@@ -15,7 +16,7 @@ public class DnsResolver {
         this.serverAddr = new InetSocketAddress(serverIp, port);
     }
 
-    public byte[] sendQuery(DnsMessage query) throws Exception {
+    private byte[] sendQuery(DnsMessage query) throws Exception {
         ByteBuffer buf = query.toByteBuffer();
         byte[] out = new byte[buf.remaining()];
         buf.get(out);
@@ -31,6 +32,23 @@ public class DnsResolver {
 
             return Arrays.copyOf(resp.getData(), resp.getLength());
         }
+    }
+
+    public DnsMessage resolve(DnsMessage query) throws Exception {
+        DnsHeader h = query.getHeader();
+
+        // recursive case is simple
+        if (h.isRd()) {
+            byte[] rawResponse = sendQuery(query);
+            return DnsMessage.fromByteBuffer(ByteBuffer.wrap(rawResponse));
+        }
+
+        // iterative case: we handle instead of some recursive DNS server
+        while (true) {
+            System.out.printf("Querying %s for %s \n", serverAddr, );
+        }
+
+
     }
 
     public static String toHex(byte[] data) {

@@ -18,14 +18,22 @@ public class DnsMessage {
         this.header = header;
         this.questions = questions;
 
-        // empty init
-        this.answers = List.of();
-        this.authorities = List.of();
-        this.additionals = List.of();
+        // empty init for toString to not have null errors
+        this.answers = new ArrayList<>();
+        this.authorities = new ArrayList<>();
+        this.additionals = new ArrayList<>();
 
         header.setQdcount(questions.size());
 
     }
+
+    // @formatter:off
+    public DnsHeader getHeader() { return header; }
+    public List<DnsQuestion> getQuestions() { return questions; }
+    public List<DnsResourceRecord> getAnswers() { return answers; }
+    public List<DnsResourceRecord> getAuthorities() { return authorities; }
+    public List<DnsResourceRecord> getAdditiionals() { return additionals; }
+    // @formatter:on
 
     public ByteBuffer toByteBuffer() {
         // DNS's UDP messages required to be 512 bytes

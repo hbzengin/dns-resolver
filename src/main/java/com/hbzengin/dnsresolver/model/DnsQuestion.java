@@ -12,6 +12,11 @@ public class DnsQuestion {
         this.qname = qname;
         this.qtype = qtype & 0xFFFF;
         this.qclass = qclass & 0xFFFF;
+
+        // only supports A record querying for now
+        if (this.qtype != 1) {
+            throw new RuntimeException("Only A record queries are allowed for now");
+        }
     }
 
     /* @formatter:off */
