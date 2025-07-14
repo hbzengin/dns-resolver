@@ -2,15 +2,27 @@ package com.hbzengin.dnsresolver.model;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DnsMessage {
     private DnsHeader header;
     private List<DnsQuestion> questions;
+    private List<DnsResourceRecord> answers;
+    private List<DnsResourceRecord> authorities;
+    private List<DnsResourceRecord> additionals;
 
+
+    // for creating a request
     public DnsMessage(DnsHeader header, List<DnsQuestion> questions) {
         this.header = header;
         this.questions = questions;
+
+        // empty init
+        this.answers = List.of();
+        this.authorities = List.of();
+        this.additionals = List.of();
+
         header.setQdcount(questions.size());
 
     }
@@ -28,6 +40,35 @@ public class DnsMessage {
         return buf;
     }
 
+    private static List<DnsResourceRecord> readResourceRecords(ByteBuffer buf, int num) {
+        List<DnsResourceRecord> list = new ArrayList<>();
+        for (int i = 0; i < num; i++) {
+            list.add(DnsResourceRecord.readFrom(buf));
+        }
+        return list;
+    }
+
+    // actually returns a response because also considers an, ns, ar
+    public static DnsMessage fromByteBuffer(ByteBuffer buf) {
+        buf.order(ByteOrder.BIG_ENDIAN);
+        DnsHeader hdr = DnsHeader.readFrom(buf);
+
+        List<DnsQuestion> qs = new ArrayList<>();
+        for (int i = 0; i < hdr.getQdcount(); i++) {
+            qs.add(DnsQuestion.readFrom(buf));
+        }
+
+        List<DnsResourceRecord> an = readResourceRecords(buf, hdr.getAncount());
+        List<DnsResourceRecord> ns = readResourceRecords(buf, hdr.getNscount());
+        List<DnsResourceRecord> ar = readResourceRecords(buf, hdr.getArcount());
+
+        DnsMessage msg = new DnsMessage(hdr, qs);
+        msg.answers = an;
+        msg.authorities = ns;
+        msg.additionals = ar;
+        return msg;
+    }
+
 
     public void printHex() {
         ByteBuffer buf = this.toByteBuffer();
@@ -36,5 +77,33 @@ public class DnsMessage {
             sb.append(String.format("%02x", buf.get()));
         }
         System.out.println(sb.toString());
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("-------------\t[DNS Message]\t-------------\n");
+        sb.append("Header: ").append(header).append('\n');
+
+        sb.append("\nQuestions:\n");
+        for (DnsQuestion q : questions) {
+            sb.append("  ").append(q).append('\n');
+        }
+
+        sb.append("\nAnswers:\n");
+        for (DnsResourceRecord rr : answers) {
+            sb.append("  ").append(rr).append('\n');
+        }
+
+        sb.append("\nAuthorities:\n");
+        for (DnsResourceRecord rr : authorities) {
+            sb.append("  ").append(rr).append('\n');
+        }
+
+        sb.append("\nAdditionals:\n");
+        for (DnsResourceRecord rr : additionals) {
+            sb.append("  ").append(rr).append('\n');
+        }
+        return sb.toString();
     }
 }
