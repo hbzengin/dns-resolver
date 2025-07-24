@@ -1,44 +1,48 @@
 package com.hbzengin.dnsresolver;
 
-import java.nio.ByteBuffer;
 import java.util.List;
-import com.hbzengin.dnsresolver.model.DnsHeader;
-import com.hbzengin.dnsresolver.model.DnsMessage;
-import com.hbzengin.dnsresolver.model.DnsQuestion;
+import com.hbzengin.dnsresolver.model.*;
 import com.hbzengin.dnsresolver.resolver.DnsResolver;
 
 public class Main {
     public static void main(String[] args) {
-        DnsHeader header = new DnsHeader();
-        header.setId(100);
+        DnsMessage recursiveMsg = makeMessage("www.hbzengin.com");
+        testRecursive(recursiveMsg);
 
-        /* Asking a recursive DNS server to find it for us */
-        header.setRd(false);
+        DnsMessage iterativeMsg = makeMessage("www.hbzengin.com");
+        testIterative(iterativeMsg);
+    }
 
-        // for dns.google.com, with type=1 (A record) and class=1 (Internet)
-        // https://datatracker.ietf.org/doc/html/rfc1035#section-3.2.4
-        DnsQuestion q = new DnsQuestion("dns.google.com", 1, 1);
-        DnsMessage msg = new DnsMessage(header, List.of(q));
+    private static DnsMessage makeMessage(String hostname) {
+        DnsHeader h = new DnsHeader();
+        h.setId((int) (Math.random() * 65_536));
+        DnsQuestion q = new DnsQuestion(hostname, RecordType.A, RecordClass.IN);
+        return new DnsMessage(h, List.of(q));
+    }
 
-        /*
-         * use if recursion is on, this is Google's recursive DNS server DnsResolver resolver = new
-         * DnsResolver("8.8.8.8", 53);
-         */
-
-        /*
-         * use if recursion is off, this is an authoritative root server w/o recursion
-         * https://en.wikipedia.org/wiki/Root_name_server. Below is a Verisign root server
-         */
-        DnsResolver resolver = new DnsResolver("198.41.0.4", 53);
-        
-
+    private static void testRecursive(DnsMessage msg) {
+        msg.getHeader().setRd(true);
+        System.out.println("# Recursive");
+        DnsResolver r = new DnsResolver("8.8.8.8");
         try {
-            byte[] byteResponse = resolver.sendQuery(msg);
-            DnsMessage response = DnsMessage.fromByteBuffer(ByteBuffer.wrap(byteResponse));
-            System.out.println(response);
-
+            DnsMessage resp = r.resolve(msg);
+            System.out.println(resp);
         } catch (Exception e) {
-            System.err.println("Error " + e.getMessage());
+            System.err.println("Recursive fail: " + e.getMessage());
         }
+        System.err.println("\n");
+    }
+
+    private static void testIterative(DnsMessage msg) {
+        msg.getHeader().setRd(false);
+        System.out.println("# Iterative ");
+        DnsResolver r = new DnsResolver("198.41.0.4");
+        try {
+            DnsMessage resp = r.resolve(msg);
+            System.out.println(resp);
+        } catch (Exception e) {
+            System.err.println("Iterative fail " + e.getMessage());
+        }
+        System.err.println("\n");
     }
 }

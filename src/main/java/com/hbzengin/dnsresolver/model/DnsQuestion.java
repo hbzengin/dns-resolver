@@ -5,24 +5,24 @@ import java.nio.charset.StandardCharsets;
 
 public class DnsQuestion {
     private final String qname;
-    private final int qtype;
-    private final int qclass;
+    private final RecordType qtype;
+    private final RecordClass qclass;
 
-    public DnsQuestion(String qname, int qtype, int qclass) {
+    public DnsQuestion(String qname, RecordType qtype, RecordClass qclass) {
         this.qname = qname;
-        this.qtype = qtype & 0xFFFF;
-        this.qclass = qclass & 0xFFFF;
+        this.qtype = qtype;
+        this.qclass = qclass;
 
         // only supports A record querying for now
-        if (this.qtype != 1) {
-            throw new RuntimeException("Only A record queries are allowed for now");
+        if (this.qtype != RecordType.A) {
+            throw new IllegalArgumentException("Only A record queries are allowed for now");
         }
     }
 
     /* @formatter:off */
     public String getQname() { return qname; }
-    public int getQtype() { return qtype; }
-    public int getQclass() { return qclass; }
+    public RecordType getQtype() { return qtype; }
+    public RecordClass getQclass() { return qclass; }
     /* @formatter:on */
 
 
@@ -40,7 +40,7 @@ public class DnsQuestion {
         buf.put((byte) 0); // ends with 0
     }
 
-    static String decodeName(ByteBuffer buf) {
+    public static String decodeName(ByteBuffer buf) {
         StringBuilder sb = new StringBuilder();
         int goBackPosition = -1;
         boolean jumped = false;
@@ -105,20 +105,20 @@ public class DnsQuestion {
 
     public void writeTo(ByteBuffer buf) {
         encodeName(qname, buf);
-        buf.putShort((short) qtype);
-        buf.putShort((short) qclass);
+        buf.putShort((short) qtype.getCode());
+        buf.putShort((short) qclass.getCode());
     }
 
     public static DnsQuestion readFrom(ByteBuffer buf) {
         String name = decodeName(buf);
-        int qtype = buf.getShort() & 0xFFFF;
-        int qclass = buf.getShort() & 0xFFFF;
+        RecordType qtype = RecordType.fromCode(buf.getShort() & 0xFFFF);
+        RecordClass qclass = RecordClass.fromCode(buf.getShort() & 0xFFFF);
         return new DnsQuestion(name, qtype, qclass);
     }
 
     @Override
     public String toString() {
-        return String.format("DnsQuestion{qname=%s, qtype=%d, qclass=%d}", qname, qtype, qclass);
+        return String.format("DnsQuestion{qname=%s, qtype=%s, qclass=%s}", qname, qtype, qclass);
     }
 
 
