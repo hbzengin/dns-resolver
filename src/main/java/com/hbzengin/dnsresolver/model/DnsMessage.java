@@ -32,7 +32,7 @@ public class DnsMessage {
     public List<DnsQuestion> getQuestions() { return questions; }
     public List<DnsResourceRecord> getAnswers() { return answers; }
     public List<DnsResourceRecord> getAuthorities() { return authorities; }
-    public List<DnsResourceRecord> getAdditiionals() { return additionals; }
+    public List<DnsResourceRecord> getAdditionals() { return additionals; }
     // @formatter:on
 
     public ByteBuffer toByteBuffer() {

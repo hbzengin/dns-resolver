@@ -57,7 +57,7 @@ public class DnsResolver {
         // 'serverAddr' must be a non-recursive DNS server
         InetSocketAddress current = serverAddr;
 
-        while (true) {
+        mainLoop: while (true) {
             System.out.printf("Querying %s for %s \n",
                     current.getAddress().getHostAddress(),
                     // I read most implementations send 1 Question, so I will do the same
@@ -74,7 +74,12 @@ public class DnsResolver {
                 }
 
                 if (rr.getType() == RecordType.CNAME) {
-                    throw new Exception("CName responses currently not supported");
+                    String canonicalName = rr.getDecodedRdata();
+                    System.out.println("CName: " + canonicalName);
+                    DnsQuestion newQuestion = new DnsQuestion(canonicalName, RecordType.A, RecordClass.IN);
+                    query = new DnsMessage(h, List.of(newQuestion));
+                    current = serverAddr;
+                    continue mainLoop;
                 }
             }
 
@@ -89,7 +94,7 @@ public class DnsResolver {
                 }
             }
 
-            for (DnsResourceRecord rr : resp.getAdditiionals()) {
+            for (DnsResourceRecord rr : resp.getAdditionals()) {
                 // if A record exists and the A record is for one of the nameservers received
                 if (rr.getType() == RecordType.A && nsNames.contains(rr.getName())) {
                     // per spec rr.RData should be IPv4 address

@@ -27,7 +27,7 @@ public class DnsResourceRecord {
         rr.rdata = new byte[rr.rdlength];
         buf.get(rr.rdata);
 
-        if (rr.type == RecordType.NS) {
+        if (rr.type == RecordType.NS || rr.type == RecordType.CNAME) {
             // if NS (nameserver), we need the domain name of the NS in string format
             // and NOT raw bytes. So this is convenient to have for later when matching
             buf.position(buf.position() - rr.rdlength);
